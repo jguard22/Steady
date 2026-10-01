@@ -518,6 +518,15 @@ export function createMonitor(opts = {}) {
     today: () => (S.day ? summarizeDay(S.day) : null),
     days: () => [...S.days.values()].map(summarizeDay),
     flush(t) { tick(t); if (S.bout) closeBout(S.lastOn?.t ?? t); if (S.stand) closeStand(); return S.day ? summarizeDay(S.day) : null; },
+    /** Raw accumulators for today, to persist across app restarts. */
+    rawToday: () => (S.day ? structuredClone(S.day) : null),
+    /** Put back saved accumulators (same day only). */
+    restoreDay(raw) {
+      if (!raw?.date) return false;
+      S.days.set(raw.date, raw);
+      if (!S.day || S.day.date === raw.date) S.day = raw;
+      return true;
+    },
     _state: S,
   };
 }

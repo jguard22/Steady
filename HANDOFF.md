@@ -6,7 +6,7 @@ Newest entries at the top of "Log".
 ## Goal
 
 "Steady by BrilliantWear": the gait & balance everyday-monitoring app from
-the original Brilliant Sole / American Institute of Balance concept, rebuilt
+the original Brilliant Sole fall-prevention concept, rebuilt
 as a web app that runs as a layer in the BrilliantWear phone app (alongside
 other wearable apps) and standalone in a browser. Three perspectives:
 
@@ -51,18 +51,23 @@ Run: `npm install`, `npm test`, `npm run serve` (http://localhost:5199).
 ## Status
 
 - [x] Engine: monitor (activity, bouts, gait, sway, rises, unsteady moments,
-      possible fall), baseline evaluation, Steady Check runners — 25 tests
+      possible fall), baseline evaluation, Steady Check runners — tests
 - [x] API contract (docs/API.md)
-- [ ] Cloud module in cloud_app (branch `steady-api`, being built in a worktree)
-- [ ] App shell, theme, router, demo data
-- [ ] Wearer views
-- [ ] Family views
-- [ ] Clinician views
-- [ ] Device adapter (hub + Web Bluetooth) + live view
-- [ ] Steady Check + exercises UI
-- [ ] Sign-in (OAuth PKCE standalone; hub sign-in broker)
+- [x] Cloud module (cloud_app branch `steady-api`, built in a worktree; 363/363 tests) — review + deploy pending
+- [x] App shell, theme (light/dark, text size, iOS Dynamic Type), router, demo personas
+- [x] Wearer: Today, Move, Steady Check runner, 8 exercises, My data (concept screens), Circle, Live, Home Station, safety overlays
+- [x] Family: people, person, alerts
+- [x] Clinician: panel, patient tabs (overview, walking, balance, activity, checks, log, month, program)
+- [x] Device adapter (phone-app layer + Web Bluetooth) + simulated insoles
+- [x] Sign-in: OAuth PKCE standalone + phone-app hand-off message (`brilliantwear:authorize`)
+- [ ] Phone app: answer `brilliantwear:authorize` (consent sheet → one-time code)
 - [ ] GitHub repo + Pages
-- [ ] Marketplace listing / OAuth client (migration in steady-api)
+- [ ] Real-hardware test (insoles in the phone app)
+
+## Verification
+
+`node scripts/shoot.mjs <outdir> "today=#/demo/wearer" …` takes headless
+screenshots (system Chrome via playwright-core) and prints page errors.
 
 ## Log
 

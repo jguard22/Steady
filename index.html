@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Steady</title>
+  <meta name="description" content="Steady by BrilliantWear — everyday walking and balance from smart insoles, compared with your own usual and shared with the people who look out for you." />
+  <meta name="theme-color" content="#070d1f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Steady" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon-180.png" />
+  <link rel="stylesheet" href="styles/app.css" />
+  <script>
+    // Theme + text size before first paint (no flash).
+    try {
+      const t = JSON.parse(localStorage.getItem("steady.theme") || "null");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+</head>
+<body>
+  <div id="app" aria-live="polite">
+    <noscript>Steady needs JavaScript to run.</noscript>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

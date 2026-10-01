@@ -2,3 +2,5 @@ node_modules/
 .DS_Store
 * 2.*
 coverage/
+.claude/
+.playwright-mcp/

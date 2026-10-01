@@ -133,7 +133,7 @@ export function generate(script, o = {}) {
         const ap = amp * (Math.sin(2 * Math.PI * f2 * u + 1.1) + 0.4 * gauss(R) * 0.3);
         let share = 0.5 + (p.shift ?? 0) + ml / 200; // right share shifts with ML sway
         if (seg.kind === "oneLeg") share = seg.side === "left" ? 0.02 : 0.98;
-        const yMid = 0.45 + ap / 260;
+        const yMid = (seg.y ?? 0.45) + ap / 260;
         push("left", p.W * (1 - share), yMid, 0.5);
         push("right", p.W * share, yMid, 0.5);
         t += dt;

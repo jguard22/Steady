@@ -136,7 +136,7 @@ export function evaluate(days, asOf, { events = [] } = {}) {
   const recentFalls = events.filter((e) => e.kind === "possibleFall" && e.date > addDays(asOf, -7) && e.outcome !== "ok");
   let status;
   if (baselineDays < BASELINE.minDays) status = "learning";
-  else if (wornDays7 === 0) status = "nodata";
+  else if (wornDays7 === 0 || (lastSeen && lastSeen < addDays(asOf, -2))) status = "nodata";
   else if (review.some((m) => BY_KEY[m.key].primary) || review.length >= 2 || watch.length + review.length >= 3 || recentFalls.length) status = "review";
   else if (watch.length || review.length) status = "watch";
   else status = "steady";
