@@ -88,10 +88,33 @@ possible"):
 - "I already have a BrilliantWear password" keeps the portal/OAuth path.
 - Backend: `/v1/steady/auth/email/{start,verify}`, `/v1/steady/invites/:code/preview`,
   emailed invites, portal verify-email link redirects to the portal (cloud_app
-  branch `steady-onboarding`). **Deploy the backend before publishing this
-  front end** — otherwise invite links show "expired".
+  branch `steady-onboarding`). Deployed and published 2026-10-01.
+
+## Text messages (2026-10-01)
+
+Asked for after the same test ("no notification to check for email"):
+
+- When the cloud offers text codes (`GET /v1/steady/auth/options` → `sms: true`),
+  sign-in and invites default to the mobile number: "Text me a code", one
+  code box that autofills from the text, "Call me with the code", and "Use my
+  email instead". With texting off (or the endpoint missing) everything stays
+  email-first — the UI is safe to publish ahead of the backend.
+- Invites accept "their mobile number or email"; the result sheet also offers
+  "Send as a text from my phone" (an `sms:` link, no backend needed).
+- Settings → Mobile number: add/remove a number, "Text me urgent alerts"
+  (family/clinician), and a separate, unticked marketing checkbox whose exact
+  text is stored as consent (`MARKETING_CONSENT` in `src/views/settings.js`;
+  keep it word-for-word in sync with `sms.html`).
+- `sms.html` is the public terms page used as opt-in proof for toll-free
+  verification.
+- Backend: cloud_app branch `steady-sms` (stacked on `steady-onboarding`),
+  Twilio Verify for codes, Messaging Service for alert/invite/marketing texts;
+  off until the Twilio keys are configured. `scripts/e2e-sms.mjs` stubs only
+  the three Twilio-backed calls and runs everything else against a local API.
 
 ## Log
+
+- 2026-10-01 afternoon: onboarding backend deployed (migration applied), front end published; text-message front end published (dormant until the SMS backend + Twilio keys are live). e2e: onboarding 13/13, text 12/12, engine 27/27.
 
 - 2026-10-01 morning: custom domain steady.brilliantwear.com live; cloud branch updated to trust only that origin (OAuth redirect, CORS, listing URL, email link).
 
