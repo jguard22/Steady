@@ -114,6 +114,7 @@ Asked for after the same test ("no notification to check for email"):
 
 ## Log
 
+- 2026-10-01 16:45Z: SMS backend deployed (migration applied); prod reports `sms: false` until the Twilio keys are configured, so the app stays email-first.
 - 2026-10-01 afternoon: onboarding backend deployed (migration applied), front end published; text-message front end published (dormant until the SMS backend + Twilio keys are live). e2e: onboarding 13/13, text 12/12, engine 27/27.
 
 - 2026-10-01 morning: custom domain steady.brilliantwear.com live; cloud branch updated to trust only that origin (OAuth redirect, CORS, listing URL, email link).
