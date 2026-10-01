@@ -22,7 +22,7 @@ wearer's phone being on.
    It hands off to the portal consent screen (sign-in if needed), which
    returns to `<uri>?code=…&state=…` (or `?error=access_denied&state=…`).
    Registered redirect URIs (exact match, trailing slash included):
-   `https://jguard22.github.io/Steady/`, `http://localhost:5199/`, `http://127.0.0.1:5199/`.
+   `https://steady.brilliantwear.com/`, `http://localhost:5199/`, `http://127.0.0.1:5199/`.
 2. `POST https://api.brilliantwear.com/v1/oauth/token` with JSON or
    `application/x-www-form-urlencoded`:
    `{grant_type: "authorization_code", client_id: "steady-web", code, code_verifier, redirect_uri}`
@@ -33,7 +33,7 @@ wearer's phone being on.
 4. Sign out: `POST /v1/oauth/revoke` `{token, client_id: "steady-web"}`.
 
 Call the API with `Authorization: Bearer <access_token>`. CORS allows
-`https://jguard22.github.io` (credentials on); other origins (e.g. a local dev
+`https://steady.brilliantwear.com` (credentials on); other origins (e.g. a local dev
 server calling production) must be added to the API's `CORS_EXTRA_ORIGINS`.
 
 ### Errors
@@ -239,4 +239,4 @@ if the outcome later goes back to `pending`/`noResponse`. A `status` alert's
 Urgent alerts email every active watcher with an `alerts` scope. Emails
 contain no health details — just "open Steady": subject
 `Steady: <displayName> may need you`, body "Open Steady to see what happened:
-https://jguard22.github.io/Steady/". An email failure never fails the request.
+https://steady.brilliantwear.com/". An email failure never fails the request.

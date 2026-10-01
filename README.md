@@ -3,10 +3,10 @@
 **Everyday walking and balance, measured by smart insoles, compared with your
 own usual — and shared with the people who look out for you.**
 
-Live: https://jguard22.github.io/Steady/ · Try the demos:
-[wearer](https://jguard22.github.io/Steady/#/demo/wearer) ·
-[family](https://jguard22.github.io/Steady/#/demo/family) ·
-[clinician](https://jguard22.github.io/Steady/#/demo/clinic)
+Live: https://steady.brilliantwear.com/ · Try the demos:
+[wearer](https://steady.brilliantwear.com/#/demo/wearer) ·
+[family](https://steady.brilliantwear.com/#/demo/family) ·
+[clinician](https://steady.brilliantwear.com/#/demo/clinic)
 
 Steady is a web app that runs as one of your apps inside the BrilliantWear
 phone app — alongside your other wearable apps, using only the readings you

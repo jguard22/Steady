@@ -52,7 +52,7 @@ Run: `npm install`, `npm test`, `npm run serve` (http://localhost:5199).
 
 Done and verified:
 - Engine + baselines + checks — `npm test` (27 tests).
-- App live on GitHub Pages: https://jguard22.github.io/Steady/ (demos: `#/demo/wearer`, `#/demo/family`, `#/demo/clinic`).
+- App live at https://steady.brilliantwear.com (GitHub Pages custom domain: Route 53 CNAME `steady` → `jguard22.github.io`, `CNAME` file in this repo, HTTPS enforced; the old github.io URL 301-redirects) (demos: `#/demo/wearer`, `#/demo/family`, `#/demo/clinic`).
 - Headless checks: `scripts/shoot.mjs` (all screens, no page errors), `scripts/e2e-demo.mjs` (Steady Check, exercise, possible fall, dizzy log — 11/11), `scripts/e2e-cloud.mjs` against a local `/v1/steady` API (accounts, invites, scopes, clinician time log + program, urgent alert + ack — 14/14).
 - Cloud module: cloud_app branch `steady-api` (also has the phone-app sign-in broker in `mobile/web/cloud/app-signin.js`). 363/363 cloud tests, 1321 mobile tests.
 
@@ -60,7 +60,6 @@ Waiting on a person:
 - **Deploy the cloud module**: `git -C ~/Documents/GitHub/cloud_app push origin steady-api:jeff-wip` (auto-deploys API + portal; migrations create the Steady tables, OAuth client `steady-web` and the published listing). Until then the app's sign-in fails; demo and on-device modes work.
 - Rebuild the phone app (Xcode Run) so it answers `brilliantwear:authorize`.
 - First real-insole session in the phone app (rates, pressure orientation, heel/toe y, pitch sign for toe-up).
-- Custom domain (e.g. steady.brilliantwear.com): Steady currently shares the `jguard22.github.io` origin (permissions, storage, CORS) with every other Pages project there.
 
 Next ideas: background capture (Home Station is the stop-gap), push notifications (email only today), relay-based live view for telehealth visits, insole-side step/fall models.
 
@@ -70,6 +69,8 @@ Next ideas: background capture (Home Station is the stop-gap), push notification
 screenshots (system Chrome via playwright-core) and prints page errors.
 
 ## Log
+
+- 2026-10-01 morning: custom domain steady.brilliantwear.com live; cloud branch updated to trust only that origin (OAuth redirect, CORS, listing URL, email link).
 
 - 2026-10-01 00:00: app + cloud module + phone-app broker built and tested; Pages live; prod deploy push blocked by the auto-mode classifier — left for Jeff.
 
