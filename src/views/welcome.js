@@ -16,7 +16,7 @@ export function welcomeView() {
   return html`<div class="welcome">
     <div class="stack" style="justify-items:start">
       ${mark("logo-xl")}
-      <h1>Steady</h1>
+      <h1>Steady <span class="muted" style="font-size:.5em;font-weight:650;letter-spacing:0">by BrilliantWear</span></h1>
       <p class="ink-2" style="font-size:1.15em">Walk with confidence. Steady learns how you usually move from your BrilliantWear insoles — and quietly lets the right people know when something changes.</p>
     </div>
     <div class="stack-sm">

@@ -96,7 +96,7 @@ function clinicLayout(content) {
   const here = state.route.path;
   return html`<div class="clinic">
     <aside class="clinic-nav">
-      <a class="brand" href="#/panel">${mark()}<span>Steady<small>for clinicians</small></span></a>
+      <a class="brand" href="#/panel">${mark()}<span>Steady<small>by BrilliantWear · for clinicians</small></span></a>
       <nav aria-label="Clinic">
         <a href="#/panel" aria-current=${here === "/panel" || here.startsWith("/patient") ? "page" : "false"}>${icon("people")} Patients</a>
         <a href="#/alerts" aria-current=${here === "/alerts" ? "page" : "false"}>${icon("bell")} Alerts ${state.topAlerts ? html`<span class="pill urgent" style="margin-left:auto;padding:2px 8px">${state.topAlerts}</span>` : nothing}</a>

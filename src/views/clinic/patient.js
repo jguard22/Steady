@@ -116,7 +116,7 @@ function checksTab(s, profile) {
           ${sm.dualTaskCostPct != null ? html`<div class="stat"><span class="label">Dual-task cost</span><span class="value">${sm.dualTaskCostPct}%</span><span class="small muted">slower while counting</span></div>` : nothing}</div>
         <h3 class="small" style="margin-top:6px">Published reference values</h3>
         <div class="list">${sm.references.map((ref) => html`<div class="row"><span class="grow small">${ref.text}<div class="tiny muted">${ref.source}</div></span><b class="small">${ref.value}</b><span class="pill ${ref.met ? "info" : ""}">${ref.met ? "Yes" : "No"}</span></div>`)}</div>
-        <p class="footnote">Shown for clinical context only. Steady does not interpret these values.</p>
+        <p class="footnote">Shown for clinical context only. Steady does not interpret these values. Reference values are from CDC's STEADI materials; their use does not imply endorsement by CDC or HHS.</p>
       </section>
       <section class="card stack-sm"><h3>Score over time</h3><steady-trend .series=${series} unit="" digits="0" label="Steady Check score" height="200"></steady-trend></section>
     </div>
