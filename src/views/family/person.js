@@ -102,8 +102,12 @@ function ackSheet(id, alert, first) {
     <div class="field"><label for="ack-note">What happened? (optional)</label>
       <textarea id="ack-note" class="input" placeholder="e.g. Called her — she's fine, sat down too fast." @input=${(e) => (note = e.target.value)}></textarea></div>
     <button class="btn primary block" @click=${async () => {
-      await state.api.ack(id, alert.id, note || null).catch(() => {});
-      closeSheet(); invalidate(`person:${id}`); invalidate("people"); toast("Marked as seen.");
+      try {
+        await state.api.ack(id, alert.id, note || null);
+        closeSheet(); invalidate(`person:${id}`); invalidate("people"); invalidate("alerts"); toast("Marked as seen.");
+      } catch (e) {
+        toast(e.message || "Couldn't save. Try again.");
+      }
     }}>Done</button>
   </div>`);
 }

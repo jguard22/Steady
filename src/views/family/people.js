@@ -33,6 +33,6 @@ export function personCard(p) {
       ${p.urgent ? pill("urgent", "Needs you") : pill(p.status)}
     </div>
     ${p.notes?.length && p.status !== "steady" ? html`<p class="small ink-2">${p.notes[0].text}.</p>` : nothing}
-    ${p.today ? html`<div class="row small muted" style="gap:8px">${icon("walk")} ${minutesText(p.today.walkMin)} walking today · ${fmtNum(p.today.steps)} steps</div>` : nothing}
+    ${p.today && p.today.steps != null ? html`<div class="row small muted" style="gap:8px">${icon("walk")} ${minutesText(p.today.walkMin)} walking today · ${fmtNum(p.today.steps)} steps</div>` : nothing}
   </a>`;
 }

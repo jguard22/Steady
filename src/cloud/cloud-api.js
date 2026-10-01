@@ -3,7 +3,11 @@ import { apiBase } from "./auth.js";
 import { NON_CLINICAL } from "./summary.js";
 
 export function createCloudApi({ auth }) {
+  // The API treats a missing field as "not given"; only profile edits use
+  // null on purpose (to clear a value), so drop top-level nulls elsewhere.
+  const dropNulls = (b) => (b && typeof b === "object" && !Array.isArray(b) ? Object.fromEntries(Object.entries(b).filter(([, v]) => v !== null)) : b);
   async function call(method, path, body) {
+    if (path !== "/me/profile") body = dropNulls(body);
     const token = await auth.token();
     const r = await fetch(`${apiBase()}/v1/steady${path}`, {
       method,
@@ -41,7 +45,7 @@ export function createCloudApi({ auth }) {
     async people() { return (await call("GET", "/people")).people; },
     async personSummary(id, asOf = today()) { return call("GET", `/people/${enc(id)}/summary?asOf=${asOf}`); },
     async personDays(id, from, to) { return (await call("GET", `/people/${enc(id)}/days?from=${from}&to=${to}`)).days; },
-    async ack(id, alertId, note) { return call("POST", `/people/${enc(id)}/alerts/${enc(alertId)}/ack`, { note }); },
+    async ack(id, alertId, note) { return call("POST", `/people/${enc(id)}/alerts/${enc(alertId)}/ack`, note ? { note } : {}); },
     async addNote(id, n) { return (await call("POST", `/people/${enc(id)}/notes`, n)).event; },
     async time(id, month) { return call("GET", `/people/${enc(id)}/time?month=${month}`); },
     async addTime(id, e) { return (await call("POST", `/people/${enc(id)}/time`, e)).entry; },

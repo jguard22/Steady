@@ -54,9 +54,13 @@ export function patientView(id, tab = "overview") {
 }
 
 async function ack(id, a) {
-  await state.api.ack(id, a.id, null).catch(() => {});
-  invalidate(`person:${id}`); invalidate("people"); invalidate("alerts");
-  toast("Acknowledged.");
+  try {
+    await state.api.ack(id, a.id, null);
+    invalidate(`person:${id}`); invalidate("people"); invalidate("alerts");
+    toast("Acknowledged.");
+  } catch (e) {
+    toast(e.message || "Couldn't save. Try again.");
+  }
 }
 
 function overview(id, s, days) {

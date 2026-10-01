@@ -157,8 +157,10 @@ async function boot() {
     history.replaceState(null, "", location.pathname + (location.hash || "#/"));
     if (ok) {
       const pending = prefs.get("pendingRole", "wearer");
-      prefs.del("pendingRole");
-      startSession({ role: pending, mode: "cloud" });
+      const join = prefs.get("pendingJoin", null);
+      prefs.del("pendingRole"); prefs.del("pendingJoin");
+      startSession({ role: pending, mode: "cloud" }, { navigate: !join });
+      if (join) go(`#/join?code=${encodeURIComponent(join)}`, { replace: true });
       return;
     }
   }
@@ -166,7 +168,9 @@ async function boot() {
   const s = prefs.get("session");
   if (s?.role) {
     if (s.mode === "cloud" && !(await auth.restore())) { update(); return; }
-    startSession(s);
+    // keep deep links (e.g. an invite link) instead of jumping home
+    const first = state.route.parts[0];
+    startSession(s, { navigate: !first || first === "welcome" });
     return;
   }
   update();

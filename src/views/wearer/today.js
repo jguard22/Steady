@@ -10,6 +10,11 @@ import { median } from "../../engine/stats.js";
 export function mySummary() {
   const s = load("me:summary", () => state.api.summary(), { ttl: 30000 });
   if (s.data) {
+    if (state.mode === "cloud" && s.data.profile && !s.data.profile.timezone && !state.tzSent) {
+      state.tzSent = true;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz) state.api.updateProfile({ timezone: tz }).catch(() => {});
+    }
     state.profileCache = s.data.profile;
     state.recentEvents = s.data.events;
     state.topAlerts = (s.data.alerts ?? []).filter((a) => a.status === "open").length;

@@ -89,9 +89,14 @@ export function joinView() {
   const code = state.route.query.code ?? "";
   let value = code;
   const submit = async () => {
-    if (!state.api || state.mode === "local") {
-      toast("Sign in first, then enter the code.");
+    if (!state.api || state.mode !== "cloud") {
       prefs.set("pendingJoin", value);
+      openSheet(() => html`<div class="stack">
+        <h2>Sign in to join</h2>
+        <p class="ink-2">Joining a care circle needs a BrilliantWear account. Steady keeps your code while you sign in.</p>
+        <button class="btn primary block" @click=${() => signIn("family")}>${icon("lock")} Sign in as family or caregiver</button>
+        <button class="btn block" @click=${() => signIn("clinician")}>${icon("stethoscope")} Sign in as a clinician</button>
+      </div>`);
       return;
     }
     try {
