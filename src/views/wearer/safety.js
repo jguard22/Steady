@@ -111,7 +111,7 @@ export function dizzySheet() {
       ${o.auto.autoContext ? html`<div class="banner">${icon("sparkles")}<span>Steady noticed: <b>${o.auto.autoContext.toLowerCase()}</b></span></div>` : nothing}
       <fieldset class="stack-sm" style="border:0;padding:0;margin:0">
         <legend class="small" style="font-weight:700;margin-bottom:6px">When did it start?</legend>
-        ${CONTEXTS.map(([k, label]) => html`<button class="btn block" style="justify-content:flex-start" aria-pressed=${o.context === k ? "true" : "false"}
+        ${CONTEXTS.map(([k, label]) => html`<button class="btn block" style="justify-content:flex-start;text-align:left" aria-pressed=${o.context === k ? "true" : "false"}
           @click=${() => pick("context", k)}>${o.context === k ? icon("checkCircle") : icon("chevronRight")} ${label}</button>`)}
       </fieldset>
       <div class="row wrap" role="group" aria-label="How strong">

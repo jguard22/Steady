@@ -48,21 +48,21 @@ test/                    vitest
 
 Run: `npm install`, `npm test`, `npm run serve` (http://localhost:5199).
 
-## Status
+## Status (2026-10-01, ~00:00)
 
-- [x] Engine: monitor (activity, bouts, gait, sway, rises, unsteady moments,
-      possible fall), baseline evaluation, Steady Check runners — tests
-- [x] API contract (docs/API.md)
-- [x] Cloud module (cloud_app branch `steady-api`, built in a worktree; 363/363 tests) — review + deploy pending
-- [x] App shell, theme (light/dark, text size, iOS Dynamic Type), router, demo personas
-- [x] Wearer: Today, Move, Steady Check runner, 8 exercises, My data (concept screens), Circle, Live, Home Station, safety overlays
-- [x] Family: people, person, alerts
-- [x] Clinician: panel, patient tabs (overview, walking, balance, activity, checks, log, month, program)
-- [x] Device adapter (phone-app layer + Web Bluetooth) + simulated insoles
-- [x] Sign-in: OAuth PKCE standalone + phone-app hand-off message (`brilliantwear:authorize`)
-- [ ] Phone app: answer `brilliantwear:authorize` (consent sheet → one-time code)
-- [ ] GitHub repo + Pages
-- [ ] Real-hardware test (insoles in the phone app)
+Done and verified:
+- Engine + baselines + checks — `npm test` (27 tests).
+- App live on GitHub Pages: https://jguard22.github.io/Steady/ (demos: `#/demo/wearer`, `#/demo/family`, `#/demo/clinic`).
+- Headless checks: `scripts/shoot.mjs` (all screens, no page errors), `scripts/e2e-demo.mjs` (Steady Check, exercise, possible fall, dizzy log — 11/11), `scripts/e2e-cloud.mjs` against a local `/v1/steady` API (accounts, invites, scopes, clinician time log + program, urgent alert + ack — 14/14).
+- Cloud module: cloud_app branch `steady-api` (also has the phone-app sign-in broker in `mobile/web/cloud/app-signin.js`). 363/363 cloud tests, 1321 mobile tests.
+
+Waiting on a person:
+- **Deploy the cloud module**: `git -C ~/Documents/GitHub/cloud_app push origin steady-api:jeff-wip` (auto-deploys API + portal; migrations create the Steady tables, OAuth client `steady-web` and the published listing). Until then the app's sign-in fails; demo and on-device modes work.
+- Rebuild the phone app (Xcode Run) so it answers `brilliantwear:authorize`.
+- First real-insole session in the phone app (rates, pressure orientation, heel/toe y, pitch sign for toe-up).
+- Custom domain (e.g. steady.brilliantwear.com): Steady currently shares the `jguard22.github.io` origin (permissions, storage, CORS) with every other Pages project there.
+
+Next ideas: background capture (Home Station is the stop-gap), push notifications (email only today), relay-based live view for telehealth visits, insole-side step/fall models.
 
 ## Verification
 
@@ -70,6 +70,8 @@ Run: `npm install`, `npm test`, `npm run serve` (http://localhost:5199).
 screenshots (system Chrome via playwright-core) and prints page errors.
 
 ## Log
+
+- 2026-10-01 00:00: app + cloud module + phone-app broker built and tested; Pages live; prod deploy push blocked by the auto-mode classifier — left for Jeff.
 
 - 2026-09-30 night: project started (Jeff approved: public repo + Pages under
   jguard22, cloud endpoints to prod, name "Steady").
