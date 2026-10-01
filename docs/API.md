@@ -75,6 +75,48 @@ unchanged.
   already used. Ask for a new one.", "That's your own invite — share it with
   someone else.", "You're already in this person's circle.").
 
+### Sign-in options
+
+`GET /auth/options` (no auth, cacheable 5 min) →
+`{email: true, sms: boolean, voice: boolean, texts: boolean}`. Offer
+"Text me a code" (and "Call me with a code") only when `sms` / `voice` are
+true; `texts` says whether alert and invite texts are switched on. Everything
+text-related is off until the server's Twilio keys are configured (below).
+
+### Text-message code sign-in (Twilio Verify)
+
+Same tokens and response shape as email codes. No auth on these routes.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/auth/phone/start` | `{phone, invite?, channel?: "sms" \| "call"}` | `200 {sent: true, invite: {wearerName, role} \| null}` |
+| POST | `/auth/phone/verify` | `{phone, code, invite?, displayName?}` | `200 {access_token, refresh_token, token_type: "Bearer", expires_in, scope, user: {id, phone, displayName, email?}, isNew, joined, inviteError?}` |
+
+- `phone` as typed: `(555) 234-5678`, `555-234-5678`, `+1 555 234 5678`. US and
+  Canada only (`SMS_ALLOWED_PREFIXES`, default `+1`); a number without `+` is
+  read as US/Canadian. Anything else → `400 {error: "invalid_phone", message:
+  "Enter a US or Canadian mobile number, like (555) 123-4567."}` (no text sent).
+- Codes are made, sent and expired by Twilio (6 digits, 10 minutes, 5 tries
+  per code). `channel: "call"` reads the code out in a voice call.
+- Not configured → `404 {error: "sms_unavailable"}` (fall back to email).
+- `start` always answers `200 {sent: true, …}` — it never says whether the
+  number has an account. Limits → `429` with a person-friendly `message`:
+  30 s between codes to one number, ≤ 3 per number per 10 minutes, ≤ 8 per
+  number per day (sign-in and linking together), ≤ 10 per IP per hour, a
+  service-wide daily cap (`SMS_DAILY_CAP`, default 300). Twilio refusing the
+  number → `400 invalid_phone`; Twilio throttling → `429`; Twilio down →
+  `503 {error: "sms_failed"}`.
+- `verify`: wrong, expired or used code → `400 {error: "invalid_code",
+  message: "That code didn't work. Check it or send a new one."}`. ≤ 15 wrong
+  codes per number per day, then `429` (no checks and no new codes) until the
+  day passes. MFA accounts → `403 use_password`; accounts pending deletion →
+  `409`; `503` if the `steady-web` client is missing.
+- A new number creates an account (`isNew: true`) with no email: `user.email`
+  is omitted (the server holds an undeliverable placeholder address). A number
+  linked to an email account (`/me/phone`) signs in to that account and
+  `user.email` is included. `user.phone` is always masked: `+1••••••4567`.
+- `invite` / `displayName` behave exactly as for email codes.
+
 ### Invite preview
 
 `GET /invites/:code/preview` (no auth; ≤ 30 per IP per hour) →
@@ -176,7 +218,7 @@ and is never stored.
 
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
-| GET | `/me` | | `{profile, circle: {members, pending}, openAlerts: Alert[]}` (creates the profile on first call, `displayName: ""`) |
+| GET | `/me` | | `{profile, circle: {members, pending}, openAlerts: Alert[], phone: PhoneSummary \| null}` (creates the profile on first call, `displayName: ""`) |
 | PUT | `/me/profile` | `{displayName?, birthYear?, sex?, timezone?, settings?}` | `{profile}` |
 | PUT | `/me/days` | `{days: DailySummary[]}` (≤ 31) | `{stored, evaluation}` |
 | GET | `/me/days` | `?from=YYYY-MM-DD&to=YYYY-MM-DD` (≤ 400 days) | `{days}` |
@@ -188,8 +230,13 @@ and is never stored.
 | GET | `/me/events` | `?from&to` (date or ISO time; default last 90 days, ≤ 500 newest) | `{events}` |
 | GET | `/me/alerts` | `?status=open\|acked\|resolved\|all` (default all) | `{alerts}` |
 | GET | `/me/circle` | | `{members, invites}` |
-| POST | `/me/circle/invites` | `{role: "family" \| "clinician", label?, name?, email?, scopes?}` | `{invite: {id, code, expiresAt, role, scopes, label}, emailed}` — code shown once (8 chars, Crockford base32: no I/L/O/U; valid 7 days, single use; ≤ 20 open invites). `name` (≤ 80) is stored as the label when no `label` is given. With `email` the server emails the invite (see below); `emailed` is `false` when no email was given or sending failed. ≤ 10 emailed invites per wearer per day (`429`). |
+| POST | `/me/circle/invites` | `{role: "family" \| "clinician", label?, name?, email?, phone?, scopes?}` | `{invite: {id, code, expiresAt, role, scopes, label}, emailed, texted}` — code shown once (8 chars, Crockford base32: no I/L/O/U; valid 7 days, single use; ≤ 20 open invites). `name` (≤ 80) is stored as the label when no `label` is given. With `email` the server emails the invite (see below); `emailed` is `false` when no email was given or sending failed. With `phone` (and texts switched on) the server texts it (see below); `texted` is `false` otherwise; an invalid `phone` → `400 invalid_phone` and no invite. ≤ 10 emailed or texted invites per wearer per day together (`429`). |
 | PATCH | `/me/circle/:linkId` | `{scopes}` | `{link}` |
+| GET | `/me/phone` | | `PhoneSummary` or `{phone: null}` |
+| POST | `/me/phone/start` | `{phone, channel?: "sms" \| "call"}` | `{sent: true}` — texts a code to add or replace your mobile number (same limits as `/auth/phone/start`) |
+| POST | `/me/phone/verify` | `{phone, code}` | `{phone: PhoneSummary}`; `409 {error: "phone_in_use", message: "That number is already used by another Steady account."}`; `400 invalid_code` |
+| PATCH | `/me/phone` | `{smsAlerts?, marketingOptIn?, consentText?}` | `PhoneSummary`. `marketingOptIn: true` requires `consentText` — the exact checkbox wording shown (≤ 500 chars); stored with the time. `false` records the opt-out time. |
+| DELETE | `/me/phone` | | `204`; `409 {error: "only_sign_in"}` when the number is the account's only way to sign in (a phone-only account) |
 | DELETE | `/me/circle/:linkId` | | `204` (revokes a member or cancels an invite) |
 
 **Emailed invites.** Subject "<WearerFirst> invited you to their Steady
@@ -200,6 +247,21 @@ on what Steady is, what a family member or clinician will see, a **Join
 only when a name was given; all URL-encoded), "No password needed — you'll
 get a 6-digit code by email.", and the code as a fallback. No health details.
 The app's `#/join` screen should call `/auth/email/start` with `{email, invite: code}`.
+
+**Texted invites.** When `phone` is sent and texts are on: "<WearerFirst>
+invited you to their Steady circle:
+https://steady.brilliantwear.com/#/join?code=<CODE>&n=<name>" then "No password
+needed. Reply STOP to stop texts." (`n` only for a plain name; the link never
+carries the number). ≤ 3 invite texts per number per day from all wearers,
+≤ 30 per IP per day. The app's `#/join` screen without `e` should offer
+"Text me a code" (`/auth/phone/start` with `{phone, invite: code}`) when
+`/auth/options` says `sms: true`.
+
+`PhoneSummary`: `{phone: "+1••••••4567", smsAlerts: boolean, marketingOptIn:
+boolean, textsAvailable: boolean}` — the number is always masked;
+`textsAvailable` is whether the server can send alert texts right now. The
+full number is only in the person's GDPR export (with the marketing consent
+history). No marketing texts are sent; consent is only recorded.
 
 Event `kind`: `possibleFall`, `help`, `dizzy`, `medChange`, `note`,
 `unsteady`, `practice`, `sensation`. `outcome` (possibleFall only, default
@@ -299,3 +361,20 @@ Urgent alerts email every active watcher with an `alerts` scope. Emails
 contain no health details — just "open Steady": subject
 `Steady: <displayName> may need you`, body "Open Steady to see what happened:
 https://steady.brilliantwear.com/". An email failure never fails the request.
+
+When texts are on, urgent alerts also text every such watcher who has a
+verified number with `smsAlerts: true`: "Steady: <WearerFirst> may need you.
+Open Steady: https://steady.brilliantwear.com/ — Reply STOP to stop texts."
+(≤ 10 alert texts per watcher per day; a failed text never fails the request).
+
+## Server configuration (texts)
+
+All optional; each feature stays off until its keys are set:
+
+| Key | Enables |
+|---|---|
+| `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET` | needed for anything Twilio (API key auth) |
+| `TWILIO_VERIFY_SERVICE_SID` | text / voice sign-in codes (`sms`, `voice` in `/auth/options`) |
+| `TWILIO_MESSAGING_SERVICE_SID` | alert and invite texts (`texts`); may stay unset until carrier registration completes |
+| `SMS_DAILY_CAP` | code sends per rolling day, whole service (default 300) |
+| `SMS_ALLOWED_PREFIXES` | comma-separated country prefixes (default `+1`) |

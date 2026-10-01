@@ -42,6 +42,7 @@ export function createLocalApi() {
     async patchEvent(id, p) { const d = await db(); const x = d.events.find((e) => e.id === id); if (x) Object.assign(x, p); await save(); return x; },
     async updateProfile(p) { const d = await db(); Object.assign(d.profile, p); await save(); return d.profile; },
     circle: () => Promise.resolve({ members: [], invites: [], needSignIn: true }),
+    phone: () => Promise.resolve({ phone: null, needSignIn: true }),
     invite: needAccount, revoke: needAccount, setScopes: needAccount, accept: needAccount,
     people: () => Promise.resolve([]),
     personSummary: needAccount, personDays: needAccount, ack: needAccount, addNote: needAccount,

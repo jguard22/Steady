@@ -4,6 +4,7 @@ import { state, load, invalidate, openSheet, closeSheet, toast, update } from ".
 import { icon } from "../../ui/icons.js";
 import { avatar, fmtDate, empty } from "../../ui/components.js";
 import { SCOPES, SCOPE_TEXT } from "../../cloud/summary.js";
+import { looksLikePhone, formatPhone } from "../../cloud/auth.js";
 
 export function circleView() {
   const r = load("me:circle", () => state.api.circle(), { ttl: 20000 });
@@ -56,10 +57,12 @@ function invite(role) {
   const f = { role, name: "", email: "", busy: false, error: null };
   const send = async (e) => {
     e?.preventDefault();
-    if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) { f.error = "That email doesn't look right."; update(); return; }
+    const contact = f.email.trim();
+    const isPhone = looksLikePhone(contact);
+    if (contact && !isPhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) { f.error = "Enter a mobile number like (555) 123-4567, or an email address."; update(); return; }
     f.busy = true; f.error = null; update();
     let inv;
-    try { inv = await state.api.invite(f.role, { name: f.name.trim() || undefined, email: f.email.trim() || undefined }); }
+    try { inv = await state.api.invite(f.role, { name: f.name.trim() || undefined, ...(isPhone ? { phone: contact } : contact ? { email: contact } : {}) }); }
     catch (err) { f.busy = false; f.error = err.message; update(); return; }
     invalidate("me:circle");
     sent(inv, f);
@@ -72,8 +75,8 @@ function invite(role) {
     </div>
     <div class="field"><label for="inv-name">Their name</label>
       <input id="inv-name" class="input" autocomplete="off" placeholder=${f.role === "clinician" ? "e.g. Dr. Rivera" : "e.g. Dana"} @input=${(e) => (f.name = e.target.value)} /></div>
-    <div class="field"><label for="inv-email">Their email <span class="muted">(Steady sends the invite for you)</span></label>
-      <input id="inv-email" class="input" type="email" inputmode="email" autocomplete="off" placeholder="name@example.com" @input=${(e) => (f.email = e.target.value)} /></div>
+    <div class="field"><label for="inv-email">Their mobile number or email <span class="muted">(Steady sends the invite for you)</span></label>
+      <input id="inv-email" class="input" type="text" inputmode="email" autocomplete="off" placeholder="(555) 123-4567 or name@example.com" @input=${(e) => (f.email = e.target.value)} /></div>
     ${f.error ? html`<p class="small" style="color:var(--urgent-ink)" role="alert">${f.error}</p>` : nothing}
     <button class="btn primary block" ?disabled=${f.busy} type="submit">${f.busy ? "Sending…" : html`${icon("userPlus")} Send invite`}</button>
     <p class="small muted">They'll get a link and a code. No password needed — they just confirm their email. ${f.role === "clinician" ? "Your clinician sees detailed measures; you can change this later." : "Family sees how you're doing and alerts; you can change this later."}</p>
@@ -81,15 +84,18 @@ function invite(role) {
 }
 
 function sent(inv, f) {
-  const link = `${location.origin}${location.pathname}#/join?code=${inv.code}${f.email ? `&e=${encodeURIComponent(f.email.trim())}` : ""}${f.name ? `&n=${encodeURIComponent(f.name.trim())}` : ""}`;
+  const contact = f.email.trim();
+  const isPhone = looksLikePhone(contact);
+  const link = `${location.origin}${location.pathname}#/join?code=${inv.code}${contact && !isPhone ? `&e=${encodeURIComponent(contact)}` : ""}${f.name ? `&n=${encodeURIComponent(f.name.trim())}` : ""}`;
+  const sentBy = inv.texted ? `We texted ${formatPhone(contact)} a link to join.` : inv.emailed ? `We emailed ${contact} a link to join.` : null;
   const who = f.name.trim() || (f.role === "clinician" ? "your clinician" : "them");
   const text = `Join my Steady circle so you can see how I'm doing: ${link} (no password needed — or enter code ${fmtCode(inv.code)} in Steady)`;
   openSheet(() => html`<div class="stack center">
-    <span class="avatar lg" style="margin:0 auto;background:var(--good-soft);color:var(--good-ink)">${icon(inv.emailed ? "check" : "userPlus")}</span>
-    <h2>${inv.emailed ? `Invite sent to ${who}` : `Share this with ${who}`}</h2>
-    <p class="ink-2">${inv.emailed ? `We emailed ${f.email.trim()} a link to join. You can also text it to them:` : "Send them this link or code. It works once and expires in 7 days."}</p>
+    <span class="avatar lg" style="margin:0 auto;background:var(--good-soft);color:var(--good-ink)">${icon(sentBy ? "check" : "userPlus")}</span>
+    <h2>${sentBy ? `Invite sent to ${who}` : `Share this with ${who}`}</h2>
+    <p class="ink-2">${sentBy ? `${sentBy} You can also send it yourself:` : "Send them this link or code. It works once and expires in 7 days."}</p>
     <div class="card tinted" style="font-size:2em;font-weight:800;letter-spacing:.18em">${fmtCode(inv.code)}</div>
-    <a class="btn primary block" href=${`sms:?&body=${encodeURIComponent(text)}`}>${icon("message")} Send as a text</a>
+    <a class="btn primary block" href=${`sms:${isPhone ? contact.replace(/[^\d+]/g, "") : ""}?&body=${encodeURIComponent(text)}`}>${icon("message")} Send as a text from my phone</a>
     ${navigator.share ? html`<button class="btn block" @click=${() => navigator.share({ title: "Join my Steady circle", text }).catch(() => {})}>${icon("share")} Share another way</button>` : nothing}
     <button class="btn ghost block" @click=${closeSheet}>Done</button>
   </div>`);

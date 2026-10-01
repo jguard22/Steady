@@ -37,10 +37,15 @@ export function createCloudApi({ auth }) {
     async postEvent(e) { return (await call("POST", "/me/events", e)).event; },
     async patchEvent(id, p) { return (await call("PATCH", `/me/events/${enc(id)}`, p)).event; },
     async updateProfile(p) { return (await call("PUT", "/me/profile", p)).profile; },
+    async phone() { return call("GET", "/me/phone").catch((e) => (e.status === 404 ? { phone: null, textsAvailable: false, unavailable: true } : Promise.reject(e))); },
+    async phoneStart(phone, channel = "sms") { return call("POST", "/me/phone/start", { phone, channel }); },
+    async phoneVerify(phone, code) { return call("POST", "/me/phone/verify", { phone, code }); },
+    async setPhone(p) { return call("PATCH", "/me/phone", p); },
+    async removePhone() { return call("DELETE", "/me/phone"); },
     async circle() { return call("GET", "/me/circle"); },
-    async invite(role, { name, email } = {}) {
-      const r = await call("POST", "/me/circle/invites", { role, ...(name ? { name } : {}), ...(email ? { email } : {}) });
-      return { ...r.invite, emailed: !!r.emailed };
+    async invite(role, { name, email, phone } = {}) {
+      const r = await call("POST", "/me/circle/invites", { role, ...(name ? { name } : {}), ...(email ? { email } : {}), ...(phone ? { phone } : {}) });
+      return { ...r.invite, emailed: !!r.emailed, texted: !!r.texted };
     },
     async revoke(id) { return call("DELETE", `/me/circle/${enc(id)}`); },
     async setScopes(id, scopes) { return (await call("PATCH", `/me/circle/${enc(id)}`, { scopes })).link; },

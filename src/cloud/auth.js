@@ -122,8 +122,52 @@ export async function previewInvite(code) {
 }
 export const normalizeCode = (c) => String(c ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+let optionsCache = null;
+/** Which sign-in methods the cloud offers right now: {email, sms, voice}. */
+export async function authOptions() {
+  if (optionsCache) return optionsCache;
+  try {
+    const r = await fetch(`${apiBase()}/v1/steady/auth/options`);
+    optionsCache = r.ok ? await r.json() : { email: true, sms: false, voice: false };
+  } catch {
+    optionsCache = { email: true, sms: false, voice: false };
+  }
+  return optionsCache;
+}
+
+/** "(555) 123-4567" style display for a US/Canada number; anything else as typed. */
+export function formatPhone(p) {
+  const s = String(p ?? "");
+  if (/^\+1•+\d{4}$/.test(s)) return `(•••) •••-${s.slice(-4)}`; // masked by the server
+  const d = s.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : s;
+}
+export const looksLikePhone = (v) => /^[\d\s()+.-]{7,}$/.test(String(v ?? "").trim()) && String(v).replace(/\D/g, "").length >= 10;
+
+function signedIn(j) {
+  tokens = { access: j.access_token, refresh: j.refresh_token, expiresAt: Date.now() + (j.expires_in ?? 900) * 1000 - 30000 };
+  user = { id: j.user?.id, email: j.user?.email ?? null, phone: j.user?.phone ?? null, name: j.user?.displayName || null };
+}
+
 export const auth = {
   get user() { return user; },
+
+  /** Text (or call) a 6-digit code. channel: "sms" | "call". */
+  phoneStart(phone, invite, channel = "sms") {
+    return postJson("/v1/steady/auth/phone/start", { phone: phone.trim(), channel, ...(invite ? { invite: normalizeCode(invite) } : {}) });
+  },
+
+  async phoneVerify({ phone, code, invite, displayName }) {
+    const j = await postJson("/v1/steady/auth/phone/verify", {
+      phone: phone.trim(), code: String(code).replace(/\D/g, ""),
+      ...(invite ? { invite: normalizeCode(invite) } : {}),
+      ...(displayName ? { displayName: displayName.trim() } : {}),
+    });
+    signedIn(j);
+    await save();
+    listeners.forEach((f) => f(user));
+    return j;
+  },
 
   /** Passwordless: email a 6-digit code. Returns {sent, invite}. */
   emailStart(email, invite) {
@@ -137,8 +181,7 @@ export const auth = {
       ...(invite ? { invite: normalizeCode(invite) } : {}),
       ...(displayName ? { displayName: displayName.trim() } : {}),
     });
-    tokens = { access: j.access_token, refresh: j.refresh_token, expiresAt: Date.now() + (j.expires_in ?? 900) * 1000 - 30000 };
-    user = { id: j.user?.id, email: j.user?.email, name: j.user?.displayName || null };
+    signedIn(j);
     await save();
     listeners.forEach((f) => f(user));
     return j;

@@ -91,6 +91,7 @@ export function createDemoApi({ viewer, wearerId = "demo-margaret" }) {
       if (ev) Object.assign(ev, patch);
       return delay(ev);
     },
+    async phone() { return delay({ phone: null, textsAvailable: false, demo: true }); },
     async updateProfile(patch) {
       Object.assign(me().profile, patch);
       return delay(me().profile);

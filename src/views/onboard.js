@@ -10,7 +10,7 @@ import { html, nothing } from "../../vendor/lit.js";
 import { state, set, update, go, toast } from "../app/state.js";
 import { startSession, ROLE_HOME } from "../app/session.js";
 import { icon, mark } from "../ui/icons.js";
-import { auth, previewInvite, normalizeCode } from "../cloud/auth.js";
+import { auth, previewInvite, normalizeCode, authOptions, formatPhone, looksLikePhone } from "../cloud/auth.js";
 import { kv, prefs } from "../store/kv.js";
 import { signIn as passwordSignIn } from "./welcome.js";
 
@@ -22,12 +22,16 @@ const ROLE_TEXT = {
 
 let O = null; // onboarding state, survives re-renders
 
+let OPTS = null; // {email, sms, voice} from the cloud
+authOptions().then((o) => { OPTS = o; if (O && !O.methodChosen) O.method = o.sms ? "sms" : "email"; update(); });
+
 function fresh(over = {}) {
-  return { step: "email", role: "wearer", invite: null, preview: null, previewLoaded: false, email: "", name: "", code: "", busy: false, error: null, resendAt: 0, ...over };
+  return { step: "email", role: "wearer", invite: null, preview: null, previewLoaded: false, method: OPTS?.sms ? "sms" : "email", methodChosen: false,
+    email: "", phone: "", name: "", code: "", busy: false, error: null, resendAt: 0, channel: "sms", ...over };
 }
 
 function remember() {
-  prefs.set("onboard", { role: O.role, invite: O.invite, email: O.email, name: O.name });
+  prefs.set("onboard", { role: O.role, invite: O.invite, email: O.email, name: O.name, method: O.method, phone: O.phone });
 }
 
 // ---------- entry points ----------
@@ -41,6 +45,7 @@ export function joinView() {
   const code = normalizeCode(q.code ?? "");
   if (!O || O.invite !== (code || null)) {
     O = fresh({ role: "family", invite: code || null, email: q.e ?? "", name: q.n ?? "" });
+    if (q.e) { O.method = "email"; O.methodChosen = true; }
     if (code) loadPreview(code);
   }
   // Already signed in: one tap to join.
@@ -52,7 +57,7 @@ export function codeLinkView() {
   const q = state.route.query;
   if (!O || O.step !== "verifying-link") {
     const saved = prefs.get("onboard", {}) ?? {};
-    O = fresh({ step: "verifying-link", email: q.e ?? saved.email ?? "", code: q.c ?? "", invite: normalizeCode(q.i ?? saved.invite ?? "") || null, role: saved.role ?? "wearer", name: saved.name ?? "" });
+    O = fresh({ step: "verifying-link", method: "email", methodChosen: true, email: q.e ?? saved.email ?? "", code: q.c ?? "", invite: normalizeCode(q.i ?? saved.invite ?? "") || null, role: saved.role ?? "wearer", name: saved.name ?? "" });
     queueMicrotask(verify);
   }
   return shell(html`<div class="center stack" style="padding:40px 0">
@@ -100,20 +105,27 @@ function inviteHeading() {
 
 function emailStep() {
   const t = ROLE_TEXT[O.role] ?? ROLE_TEXT.wearer;
+  const sms = O.method === "sms";
   const submit = (e) => { e?.preventDefault(); sendCode(); };
+  const switchTo = (m) => { O.method = m; O.methodChosen = true; O.error = null; update(); setTimeout(() => document.getElementById(m === "sms" ? "ob-phone" : "ob-email")?.focus(), 30); };
   return html`
     ${O.invite ? inviteHeading() : html`<div class="stack-sm"><h1>${t.title}</h1><p class="ink-2">${t.lead}</p></div>`}
     <form class="stack" @submit=${submit}>
       <div class="field"><label for="ob-name">${O.role === "wearer" ? "Your first name" : "Your name"}</label>
         <input id="ob-name" class="input" autocomplete="given-name" .value=${O.name} @input=${(e) => (O.name = e.target.value)}
           placeholder=${O.role === "clinician" ? "e.g. Dr. Rivera" : "e.g. Dana"} /></div>
-      <div class="field"><label for="ob-email">Your email</label>
-        <input id="ob-email" class="input" type="email" inputmode="email" autocomplete="email" required .value=${O.email}
-          @input=${(e) => (O.email = e.target.value)} placeholder="you@example.com" /></div>
+      ${sms
+        ? html`<div class="field"><label for="ob-phone">Your mobile number</label>
+            <input id="ob-phone" class="input" type="tel" inputmode="tel" autocomplete="tel-national" required .value=${O.phone}
+              @input=${(e) => (O.phone = e.target.value)} placeholder="(555) 123-4567" /></div>`
+        : html`<div class="field"><label for="ob-email">Your email</label>
+            <input id="ob-email" class="input" type="email" inputmode="email" autocomplete="email" required .value=${O.email}
+              @input=${(e) => (O.email = e.target.value)} placeholder="you@example.com" /></div>`}
       ${O.error ? html`<p class="small" style="color:var(--urgent-ink)" role="alert">${O.error}</p>` : nothing}
-      <button class="btn primary block" style="min-height:64px;font-size:1.1em" ?disabled=${O.busy} type="submit">${O.busy ? "Sending…" : html`${icon("message")} Email me a code`}</button>
+      <button class="btn primary block" style="min-height:64px;font-size:1.1em" ?disabled=${O.busy} type="submit">${O.busy ? "Sending…" : html`${icon("message")} ${sms ? "Text me a code" : "Email me a code"}`}</button>
     </form>
-    <p class="small muted center">No password needed. We'll email you a 6-digit code — that's it.</p>
+    <p class="small muted center">${sms ? "No password needed. We'll text you a 6-digit code. Message & data rates may apply." : "No password needed. We'll email you a 6-digit code — that's it."}</p>
+    ${OPTS?.sms ? html`<button class="btn ghost small" style="justify-self:center" @click=${() => switchTo(sms ? "email" : "sms")}>${sms ? "Use my email instead" : "Use my mobile number instead"}</button>` : nothing}
     <div class="divider"></div>
     <button class="btn ghost small" style="justify-self:center" @click=${() => { prefs.set("pendingJoin", O.invite); passwordSignIn(O.role); }}>I already have a BrilliantWear password</button>
     ${!O.invite && O.role === "wearer" ? html`<button class="btn ghost small" style="justify-self:center" @click=${() => startSession({ role: "wearer", mode: "local" })}>Skip for now — keep my data on this device</button>` : nothing}
@@ -130,8 +142,12 @@ function codeStep() {
   };
   return html`
     <div class="stack-sm">
-      <h1>Check your email</h1>
-      <p class="ink-2">We sent a 6-digit code to <b>${O.email}</b>. It can take a minute to arrive — check spam if you don't see it.</p>
+      <h1>${O.method === "sms" ? (O.channel === "call" ? "We're calling you" : "Check your texts") : "Check your email"}</h1>
+      <p class="ink-2">${O.method === "sms"
+        ? O.channel === "call"
+          ? html`Your phone will ring at <b class="nowrap">${formatPhone(O.phone)}</b> and a voice will read a 6-digit code. Type it below.`
+          : html`We texted a 6-digit code to <b class="nowrap">${formatPhone(O.phone)}</b>. It usually arrives within a minute.`
+        : html`We sent a 6-digit code to <b>${O.email}</b>. It can take a minute to arrive — check spam if you don't see it.`}</p>
     </div>
     <div class="field">
       <label for="ob-code">Code</label>
@@ -140,10 +156,11 @@ function codeStep() {
     </div>
     ${O.error ? html`<p class="small" style="color:var(--urgent-ink)" role="alert">${O.error}</p>` : nothing}
     <button class="btn primary block" style="min-height:64px;font-size:1.1em" ?disabled=${O.busy || O.code.length !== 6} @click=${verify}>${O.busy ? "Checking…" : O.invite && O.preview ? `Join ${O.preview.wearerName}'s circle` : "Continue"}</button>
-    <p class="small muted center">On a phone, the code often appears just above the keyboard — tap it. Or tap “Open Steady” in the email.</p>
-    <div class="row" style="justify-content:center;gap:4px">
-      <button class="btn ghost small" ?disabled=${wait > 0 || O.busy} @click=${sendCode}>${wait > 0 ? `Send again in ${wait}s` : "Send a new code"}</button>
-      <button class="btn ghost small" @click=${() => { O.step = "email"; O.code = ""; O.error = null; update(); }}>Use a different email</button>
+    <p class="small muted center">${O.method === "sms" ? "On a phone, the code often appears just above the keyboard — tap it." : "On a phone, the code often appears just above the keyboard — tap it. Or tap “Open Steady” in the email."}</p>
+    <div class="row wrap" style="justify-content:center;gap:4px">
+      <button class="btn ghost small" ?disabled=${wait > 0 || O.busy} @click=${() => { O.channel = "sms"; sendCode(); }}>${wait > 0 ? `Send again in ${wait}s` : O.method === "sms" ? "Text me a new code" : "Send a new code"}</button>
+      ${O.method === "sms" && OPTS?.voice && wait === 0 ? html`<button class="btn ghost small" ?disabled=${O.busy} @click=${() => { O.channel = "call"; sendCode(); }}>${icon("phone")} Call me with the code</button>` : nothing}
+      <button class="btn ghost small" @click=${() => { O.step = "email"; O.code = ""; O.error = null; O.channel = "sms"; update(); }}>${O.method === "sms" ? "Use a different number" : "Use a different email"}</button>
     </div>`;
 }
 
@@ -169,15 +186,19 @@ function joinSignedIn() {
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function sendCode() {
-  if (!EMAIL.test(O.email.trim())) { O.error = "Enter your email address, like name@example.com."; update(); return; }
+  const sms = O.method === "sms";
+  if (sms && !looksLikePhone(O.phone)) { O.error = "Enter your mobile number, like (555) 123-4567."; update(); return; }
+  if (!sms && !EMAIL.test(O.email.trim())) { O.error = "Enter your email address, like name@example.com."; update(); return; }
   O.busy = true; O.error = null; update();
   try {
-    const r = await auth.emailStart(O.email, O.invite);
+    const r = sms ? await auth.phoneStart(O.phone, O.invite, O.channel) : await auth.emailStart(O.email, O.invite);
     if (r.invite && !O.preview) { O.preview = r.invite; O.previewLoaded = true; }
     remember();
     O.step = "code"; O.code = ""; O.resendAt = Date.now() + 30000;
   } catch (e) {
-    O.error = e.message;
+    if (e.code === "sms_unavailable" || e.code === "sms_failed") { O.method = "email"; O.methodChosen = true; O.error = "Text codes aren't working right now — use your email instead."; }
+    else if (e.code === "use_email") { O.method = "email"; O.methodChosen = true; O.error = e.message || "For your security, sign in with your email this time."; }
+    else O.error = e.message;
   }
   O.busy = false;
   update();
@@ -188,7 +209,8 @@ async function verify() {
   if (!O || O.busy) return;
   O.busy = true; O.error = null; update();
   try {
-    const r = await auth.emailVerify({ email: O.email, code: O.code, invite: O.invite, displayName: O.name || undefined });
+    const args = { code: O.code, invite: O.invite, displayName: O.name || undefined };
+    const r = O.method === "sms" ? await auth.phoneVerify({ ...args, phone: O.phone }) : await auth.emailVerify({ ...args, email: O.email });
     const role = r.joined ? (r.joined.role === "clinician" ? "clinician" : "family") : O.role;
     const invite = O.invite, inviteError = r.inviteError;
     O = null;
@@ -206,7 +228,8 @@ async function verify() {
   } catch (e) {
     if (O) {
       O.busy = false;
-      O.error = e.code === "use_password" ? e.message : e.message;
+      O.error = e.message;
+      if (e.code === "use_email") { O.method = "email"; O.methodChosen = true; O.step = "email"; O.code = ""; }
       if (O.step === "verifying-link") O.step = "verifying-link";
       update();
     }
