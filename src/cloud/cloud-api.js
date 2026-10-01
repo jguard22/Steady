@@ -38,7 +38,10 @@ export function createCloudApi({ auth }) {
     async patchEvent(id, p) { return (await call("PATCH", `/me/events/${enc(id)}`, p)).event; },
     async updateProfile(p) { return (await call("PUT", "/me/profile", p)).profile; },
     async circle() { return call("GET", "/me/circle"); },
-    async invite(role) { return (await call("POST", "/me/circle/invites", { role })).invite; },
+    async invite(role, { name, email } = {}) {
+      const r = await call("POST", "/me/circle/invites", { role, ...(name ? { name } : {}), ...(email ? { email } : {}) });
+      return { ...r.invite, emailed: !!r.emailed };
+    },
     async revoke(id) { return call("DELETE", `/me/circle/${enc(id)}`); },
     async setScopes(id, scopes) { return (await call("PATCH", `/me/circle/${enc(id)}`, { scopes })).link; },
     async accept(code) { return call("POST", "/circle/accept", { code }); },

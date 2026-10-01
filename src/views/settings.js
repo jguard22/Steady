@@ -5,7 +5,6 @@ import { senseService } from "../app/sense-service.js";
 import { prefs } from "../store/kv.js";
 import { icon } from "../ui/icons.js";
 import { apiBase, setApiBase } from "../cloud/auth.js";
-import { signIn } from "./welcome.js";
 import { DEMO_IDENTITIES } from "../cloud/demo-api.js";
 
 function setTheme(t) {
@@ -27,7 +26,7 @@ export function settingsView() {
     <section class="card stack-sm">
       <div class="row"><span class="avatar">${icon("user")}</span><div class="grow"><b>${who}</b>
         <div class="small muted">${{ wearer: "Wearing the insoles", family: "Family & caregivers", clinician: "Clinician" }[state.role]}${state.mode === "local" ? " · data stays on this device" : ""}</div></div></div>
-      ${state.mode === "local" ? html`<button class="btn primary" @click=${() => signIn(state.role)}>${icon("lock")} Sign in to share with family or a clinician</button>` : nothing}
+      ${state.mode === "local" ? html`<a class="btn primary" href=${`#/start/${state.role}`}>${icon("message")} Sign in with my email to share with family or a clinician</a>` : nothing}
     </section>
 
     ${state.role === "wearer" && profile ? html`<section class="card stack">

@@ -32,7 +32,7 @@ export function personView(id) {
     <a class="btn ghost small" href="#/people?list=1" style="justify-self:start">${icon("chevronLeft")} People</a>
     <section class="row">
       ${avatar(name, "lg")}
-      <div class="grow"><h1 style="font-size:1.5em">${name}</h1><div class="small muted">Insoles last used ${ago(s.evaluation.coverage.lastSeen)}</div></div>
+      <div class="grow"><h1 style="font-size:1.5em">${name}</h1><div class="small muted">${s.evaluation.coverage.lastSeen ? `Insoles last used ${ago(s.evaluation.coverage.lastSeen)}` : "No insole data yet"}</div></div>
     </section>
 
     ${urgent.map((a) => html`<section class="hero urgent stack-sm" role="alert">

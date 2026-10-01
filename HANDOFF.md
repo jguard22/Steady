@@ -68,6 +68,29 @@ Next ideas: background capture (Home Station is the stop-gap), push notification
 `node scripts/shoot.mjs <outdir> "today=#/demo/wearer" …` takes headless
 screenshots (system Chrome via playwright-core) and prints page errors.
 
+## Onboarding (2026-10-01)
+
+Real-world test failed: a family member registered on the portal, was told to
+verify her email, the link opened a raw JSON page, and the invite was lost.
+New flow (Jeff: "minimal steps, clear instructions, as much automation as
+possible"):
+
+- Everyone: name + email → 6-digit code (phones autofill it; the email's
+  "Open Steady" button signs in by itself) → in. No passwords. Existing
+  accounts work too (the code verifies an unverified account).
+- Invites: the wearer types a name + email and Steady emails the invite; the
+  link pre-fills the invitee's email and name, shows "<Name> invited you", and
+  checking the code joins the circle in the same request.
+- Wearers who started "on this device" keep their data: it is uploaded on
+  first sign-in.
+- Today shows a "Getting started" checklist that ticks itself off (name,
+  insoles connected, a week of wear, someone invited).
+- "I already have a BrilliantWear password" keeps the portal/OAuth path.
+- Backend: `/v1/steady/auth/email/{start,verify}`, `/v1/steady/invites/:code/preview`,
+  emailed invites, portal verify-email link redirects to the portal (cloud_app
+  branch `steady-onboarding`). **Deploy the backend before publishing this
+  front end** — otherwise invite links show "expired".
+
 ## Log
 
 - 2026-10-01 morning: custom domain steady.brilliantwear.com live; cloud branch updated to trust only that origin (OAuth redirect, CORS, listing URL, email link).

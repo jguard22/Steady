@@ -40,7 +40,7 @@ export function patientView(id, tab = "overview") {
       ${avatar(name, "lg")}
       <div class="grow"><h1 style="font-size:1.6em">${name}</h1>
         <div class="muted">${[age ? `${age} y` : null, p.sex, ...(p.tags ?? p.settings?.tags ?? [])].filter(Boolean).join(" · ")}</div>
-        <div class="small muted">Data ${ago(s.evaluation.coverage.lastSeen)} · ${s.evaluation.coverage.wornDays7}/7 days worn this week</div></div>
+        <div class="small muted">${s.evaluation.coverage.lastSeen ? `Data ${ago(s.evaluation.coverage.lastSeen)}` : "No data yet"} · ${s.evaluation.coverage.wornDays7}/7 days worn this week</div></div>
       ${urgent.length ? pill("urgent", "Urgent alert") : pill(s.evaluation.status)}
       <button class="btn small" @click=${() => timeSheet(id, first)}>${icon("timer")} Log time</button>
       <button class="btn small" @click=${() => noteSheet(id, first)}>${icon("note")} Note</button>

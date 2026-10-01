@@ -1,5 +1,6 @@
 import { html, nothing } from "../../../vendor/lit.js";
-import { state, load, memo, openSheet, closeSheet, toast, invalidate, set } from "../../app/state.js";
+import { state, load, memo, openSheet, closeSheet, toast, invalidate, set, update } from "../../app/state.js";
+import { prefs } from "../../store/kv.js";
 import { senseService } from "../../app/sense-service.js";
 import { icon } from "../../ui/icons.js";
 import { statusHero, ring, action, minutesText, fmtNum, fmtDate, nonClinical, ago } from "../../ui/components.js";
@@ -58,6 +59,8 @@ export function todayView() {
       <p class="muted">${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
     </section>
 
+    ${state.mode !== "demo" ? setupChecklist(s.data) : nothing}
+
     ${statusHero(evaluation, { audience: "wearer", onWhy: () => openSheet(whySheet) })}
 
     <section class="stack-sm" aria-label="Today so far">
@@ -93,6 +96,38 @@ export function todayView() {
 
     ${nonClinical(s.data.nonClinical ?? state.api.nonClinical)}
   `;
+}
+
+/** First-week checklist; every item ticks itself off. */
+function setupChecklist(data) {
+  if (prefs.get("setupDismissed", false)) return nothing;
+  const circle = load("me:circle", () => state.api.circle(), { ttl: 60000 }).data;
+  const inFrame = (() => { try { return window.parent !== window; } catch { return true; } })();
+  const wornDays = (data.days ?? []).filter((d) => (d.minutes?.worn ?? 0) > 0).length;
+  const baseline = data.evaluation?.coverage?.baselineDays ?? 0;
+  const steps = [
+    { done: !!data.profile?.displayName, title: "Add your name", sub: "So your family sees who's sharing.", href: "#/settings" },
+    { done: state.sense.status === "live" || wornDays > 0, title: "Connect your insoles",
+      sub: inFrame ? "In the BrilliantWear app, open Devices and turn on both insoles. Steady finds them by itself." : navigator.bluetooth ? "Put them in your shoes, then tap Connect." : "Open Steady inside the BrilliantWear app on your phone to connect them.",
+      action: !inFrame && navigator.bluetooth ? () => senseService.connect({ pick: true }) : null, actionLabel: "Connect" },
+    { done: baseline >= 7, title: "Wear them for a week", sub: baseline ? `Day ${Math.min(7, baseline)} of 7 — just go about your day. Steady is learning your usual.` : "Just go about your day. Steady learns how you usually move." },
+    { done: !!(circle && (circle.members?.length || circle.invites?.length)), title: "Invite someone to look out for you",
+      sub: circle?.needSignIn ? "Sign in with your email first, so they can follow along." : "A family member, a friend, or your clinician.", href: circle?.needSignIn ? "#/start/wearer" : "#/circle" },
+  ];
+  const left = steps.filter((x) => !x.done).length;
+  if (!left) return nothing;
+  return html`<section class="card stack-sm" aria-label="Getting started">
+    <div class="card-head" style="margin-bottom:0"><h3>Getting started</h3><span class="small muted">${steps.length - left} of ${steps.length} done</span></div>
+    <ol class="note-list" style="padding:0">
+      ${steps.map((x) => html`<li>
+        <span class="pill ${x.done ? "good" : ""}" style="padding:4px">${icon(x.done ? "check" : "chevronRight")}</span>
+        <div class="grow"><b style="font-weight:650;${x.done ? "text-decoration:line-through;color:var(--muted)" : ""}">${x.title}</b>
+          ${x.done ? nothing : html`<div class="small muted">${x.sub}</div>`}</div>
+        ${!x.done && x.action ? html`<button class="btn small primary" @click=${x.action}>${x.actionLabel}</button>` : !x.done && x.href ? html`<a class="btn small" href=${x.href}>Go</a>` : nothing}
+      </li>`)}
+    </ol>
+    <button class="btn ghost small" style="justify-self:end" @click=${() => { prefs.set("setupDismissed", true); update(); }}>Hide</button>
+  </section>`;
 }
 
 function hoursText(min) {

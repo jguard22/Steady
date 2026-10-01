@@ -99,8 +99,50 @@ function hubAuthorize({ challenge, stateValue }) {
   });
 }
 
+async function postJson(path, body) {
+  let r;
+  try {
+    r = await fetch(`${apiBase()}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  } catch {
+    throw Object.assign(new Error("Can't reach BrilliantWear. Check your internet connection."), { status: 0 });
+  }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.message || (r.status === 429 ? "Too many tries. Wait a few minutes and try again." : "Something went wrong. Please try again.")), { status: r.status, code: j.error });
+  return j;
+}
+
+/** Public preview of an invite: {wearerName, role, expiresAt} or null. */
+export async function previewInvite(code) {
+  try {
+    const r = await fetch(`${apiBase()}/v1/steady/invites/${encodeURIComponent(normalizeCode(code))}/preview`);
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+export const normalizeCode = (c) => String(c ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
 export const auth = {
   get user() { return user; },
+
+  /** Passwordless: email a 6-digit code. Returns {sent, invite}. */
+  emailStart(email, invite) {
+    return postJson("/v1/steady/auth/email/start", { email: email.trim(), ...(invite ? { invite: normalizeCode(invite) } : {}) });
+  },
+
+  /** Passwordless: check the code, sign in (creating the account if new), join an invite. */
+  async emailVerify({ email, code, invite, displayName }) {
+    const j = await postJson("/v1/steady/auth/email/verify", {
+      email: email.trim(), code: String(code).replace(/\D/g, ""),
+      ...(invite ? { invite: normalizeCode(invite) } : {}),
+      ...(displayName ? { displayName: displayName.trim() } : {}),
+    });
+    tokens = { access: j.access_token, refresh: j.refresh_token, expiresAt: Date.now() + (j.expires_in ?? 900) * 1000 - 30000 };
+    user = { id: j.user?.id, email: j.user?.email, name: j.user?.displayName || null };
+    await save();
+    listeners.forEach((f) => f(user));
+    return j;
+  },
   get signedIn() { return !!tokens?.access; },
   onUser(f) { listeners.add(f); return () => listeners.delete(f); },
 

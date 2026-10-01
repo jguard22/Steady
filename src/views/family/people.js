@@ -29,7 +29,7 @@ export function personCard(p) {
   return html`<a class="card card-link stack-sm" href=${`#/p/${p.wearerId}`}>
     <div class="row">
       ${avatar(p.displayName)}
-      <div class="grow"><b>${p.displayName}</b><div class="small muted">Insoles last used ${ago(p.lastSeen)}</div></div>
+      <div class="grow"><b>${p.displayName}</b><div class="small muted">${p.lastSeen ? `Insoles last used ${ago(p.lastSeen)}` : "No insole data yet"}</div></div>
       ${p.urgent ? pill("urgent", "Needs you") : pill(p.status)}
     </div>
     ${p.notes?.length && p.status !== "steady" ? html`<p class="small ink-2">${p.notes[0].text}.</p>` : nothing}

@@ -17,7 +17,8 @@ page.on("console", (m) => { if (m.type() === "error") errors.push(`console: ${m.
 const hard = setTimeout(() => { console.error("HARD TIMEOUT"); process.exit(2); }, Number(process.env.HARD || 90000));
 let first = true;
 for (const r of routes) {
-  const [name, hash] = r.includes("=") ? r.split("=") : [r.replace(/[^a-z0-9]+/gi, "_"), r];
+  const eq = r.indexOf("=");
+  const [name, hash] = eq > 0 && !r.startsWith("#") ? [r.slice(0, eq), r.slice(eq + 1)] : [r.replace(/[^a-z0-9]+/gi, "_"), r];
   if (first || hash.startsWith("#/demo")) {
     await page.goto(base + hash, { timeout: 15000 });
     first = false;

@@ -8,7 +8,8 @@ import { auth } from "./cloud/auth.js";
 import { startSession, endSession, ROLE_HOME } from "./app/session.js";
 import "./ui/charts.js";
 
-import { welcomeView, joinView, signinView } from "./views/welcome.js";
+import { welcomeView, signinView } from "./views/welcome.js";
+import { startView, joinView, codeLinkView } from "./views/onboard.js";
 import { todayView } from "./views/wearer/today.js";
 import { moveView } from "./views/wearer/move.js";
 import { checkView } from "./views/wearer/check.js";
@@ -40,6 +41,8 @@ function view() {
   const [a, b, c] = parts;
   if (a === "signin") return signinView();
   if (a === "join") return joinView();
+  if (a === "start") return startView(b);
+  if (a === "code") return codeLinkView();
   if (a === "demo") { queueMicrotask(() => startDemo(b)); return nothing; }
   if (!state.role || a === "welcome" || !a) return state.role && !a ? (go(ROLE_HOME[state.role]), nothing) : welcomeView();
   if (a === "settings") return settingsView();
@@ -123,7 +126,7 @@ function shell(content) {
 function renderApp() {
   document.body.className = [ROLE_BODY[state.role] ?? "role-wearer", textClass()].join(" ");
   const content = view();
-  const full = !state.role || ["welcome", "signin", "join", "station"].includes(state.route.parts[0]) || (state.route.parts[0] === "check" && state.route.parts[1]) || state.route.parts[0] === "exercise" && state.route.parts[1];
+  const full = !state.role || ["welcome", "signin", "join", "start", "code", "station"].includes(state.route.parts[0]) || (state.route.parts[0] === "check" && state.route.parts[1]) || state.route.parts[0] === "exercise" && state.route.parts[1];
   const page = full ? content : state.role === "clinician" ? clinicLayout(content) : shell(content);
   render(html`${page}
     ${state.sheet ? html`<div class="sheet-backdrop" @click=${(e) => e.target === e.currentTarget && closeSheet()}>

@@ -96,9 +96,9 @@ export function createDemoApi({ viewer, wearerId = "demo-margaret" }) {
       return delay(me().profile);
     },
     async circle() { return delay(circleOf(wearerId)); },
-    async invite(role) {
+    async invite(role, { name, email } = {}) {
       const code = Array.from({ length: 8 }, () => "ABCDEFGHJKMNPQRSTVWXYZ23456789"[Math.floor(Math.random() * 30)]).join("");
-      const inv = { id: `inv-${Date.now()}`, wearerId, role, code, scopes: [...DEFAULT_SCOPES[role]], expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), status: "pending" };
+      const inv = { id: `inv-${Date.now()}`, wearerId, role, code, label: name ?? null, emailed: !!email, scopes: [...DEFAULT_SCOPES[role]], expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), status: "pending" };
       D.invites.push(inv);
       return delay(inv);
     },
