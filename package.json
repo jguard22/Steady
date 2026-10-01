@@ -1,0 +1,19 @@
+{
+  "name": "steady",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Steady by BrilliantWear: gait and balance, measured in everyday life, shared with the people who look out for you.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "vendor": "node scripts/vendor.mjs",
+    "serve": "node scripts/serve.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "happy-dom": "^18.0.0",
+    "lit": "^3.3.0",
+    "vitest": "^3.2.0"
+  }
+}
